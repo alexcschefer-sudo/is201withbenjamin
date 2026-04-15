@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Treasure Click Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #0f172a, #1e293b);
+      color: white;
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 2.5rem;
+    }
+
+    #gameInfo {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      font-size: 1.2rem;
+      margin: 15px 0;
+      flex-wrap: wrap;
+    }
+
+    #gameArea {
+      width: 90%;
+      max-width: 900px;
+      height: 500px;
+      margin: 20px auto;
+      border: 4px solid white;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #1d4ed8, #0f172a);
+    }
+
+    .item {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.15s;
+    }
+
+    .item:hover {
+      transform: scale(1.1);
+    }
+
+    .treasure {
+      background: gold;
+      box-shadow: 0 0 15px gold;
+    }
+
+    .bomb {
+      background: crimson;
+      box-shadow: 0 0 15px red;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background-color: #22c55e;
+      color: white;
+      margin-bottom: 20px;
+    }
+
+    button:hover {
+      background-color: #16a34a;
+    }
+
+    #message {
+      font-size: 1.2rem;
+      margin-top: 10px;
+      min-height: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Treasure Click</h1>
+
+  <div id="gameInfo">
+    <div>Score: <span id="score">0</span></div>
+    <div>Time: <span id="time">30</span></div>
+    <div>Level: <span id="level">1</span></div>
+  </div>
+
+  <button id="startBtn">Start Game</button>
+  <div id="message">Click treasures, avoid bombs.</div>
+
+  <div id="gameArea"></div>
+
+  <script>
+    const gameArea = document.getElementById("gameArea");
+    const scoreDisplay = document.getElementById("score");
+    const timeDisplay = document.getElementById("time");
+    const levelDisplay = document.getElementById("level");
+    const messageDisplay = document.getElementById("message");
+    const startBtn = document.getElementById("startBtn");
+
+    let score = 0;
+    let timeLeft = 30;
+    let level = 1;
+    let gameRunning = false;
+    let countdown;
+    let spawnLoop;
+
+    function randomPosition(size) {
+      const maxX = gameArea.clientWidth - size;
+      const maxY = gameArea.clientHeight - size;
+      return {
+        x: Math.floor(Math.random() * maxX),
+        y: Math.floor(Math.random() * maxY)
+      };
+    }
+
+    function createItem(type) {
+      const item = document.createElement("div");
+      item.classList.add("item", type);
+
+      if (type === "treasure") {
+        item.textContent = "💎";
+      } else {
+        item.textContent = "💣";
+      }
+
+      const pos = randomPosition(60);
+      item.style.left = pos.x + "px";
+      item.style.top = pos.y + "px";
+
+      item.addEventListener("click", () => {
+        if (!gameRunning) return;
+
+        if (type === "treasure") {
+          score += 1;
+          if (score > 0 && score % 5 === 0) {
+            level += 1;
+            levelDisplay.textContent = level;
+          }
+          messageDisplay.textContent = "Nice!";
+        } else {
+          score -= 2;
+          messageDisplay.textContent = "Boom! Wrong one.";
+        }
+
+        scoreDisplay.textContent = score;
+        item.remove();
+      });
+
+      gameArea.appendChild(item);
+
+      setTimeout(() => {
+        if (item.parentElement) {
+          item.remove();
+        }
+      }, Math.max(700, 1500 - level * 100));
+    }
+
+    function spawnItems() {
+      if (!gameRunning) return;
+
+      createItem("treasure");
+
+      if (Math.random() < 0.35 + level * 0.03) {
+        createItem("bomb");
+      }
+    }
+
+    function startGame() {
+      score = 0;
+      timeLeft = 30;
+      level = 1;
+      gameRunning = true;
+
+      scoreDisplay.textContent = score;
+      timeDisplay.textContent = timeLeft;
+      levelDisplay.textContent = level;
+      messageDisplay.textContent = "Go!";
+      gameArea.innerHTML = "";
+      startBtn.disabled = true;
+
+      countdown = setInterval(() => {
+        timeLeft--;
+        timeDisplay.textContent = timeLeft;
+
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+
+      spawnLoop = setInterval(() => {
+        spawnItems();
+      }, 900);
+    }
+
+    function endGame() {
+      gameRunning = false;
+      clearInterval(countdown);
+      clearInterval(spawnLoop);
+      gameArea.innerHTML = "";
+      startBtn.disabled = false;
+
+      let rank = "";
+      if (score >= 25) {
+        rank = "Treasure Master!";
+      } else if (score >= 15) {
+        rank = "Great job!";
+      } else if (score >= 8) {
+        rank = "Solid run!";
+      } else {
+        rank = "Try again!";
+      }
+
+      messageDisplay.textContent = `Game over! Final score: ${score}. ${rank}`;
+    }
+
+    startBtn.addEventListener("click", startGame);
+  </script>
+</body>
+</html>
